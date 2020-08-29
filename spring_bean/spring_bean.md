@@ -87,7 +87,7 @@ scope属性：
 
 ```java
 <property name="myString">
-	<array>AAA</array>
+     <array>AAA</array>
 </property>
 ```
 
@@ -127,7 +127,7 @@ scope属性：
 
 ​		**用于生命周期的注解**
 
-###### **用配置类干掉xml**
+#### **用配置类干掉xml**
 
 * @Configuration：指定此类是一个配置类
 * @ComponentScan：用于通过注解指定spring在创建容器时要扫描的包
@@ -147,7 +147,7 @@ scope属性：
 
 ```java
 //注解
-	Application ac = new AnnotationConfigApplicationContext(SpringConfiguration.class);
+Application ac = new AnnotationConfigApplicationContext(SpringConfiguration.class);
 ```
 
 * 抽取出jdbc配置
