@@ -1,16 +1,204 @@
 # SpringMVC进阶
 
+* 组件介绍
+  * 前端控制器 DispatcherServlet
+  * 处理器映射器 HandlerMapping
+  * 处理器适配器 HandlerAdapter
+  * 处理器 Handler
+  * 视图解析器 View Resolver
+* 参数绑定
+	* 请求参数绑定
+    * @requestMapping URL路径与方法对应关系（方法和类上）
+      * 属性：value,path,method,params 
 
+```java
+<web.xml>
+<!--配置前端控制器-->
+<servlet>
+    <servlet-name>dispatcherServlet</servlet-name>
+    <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+    <init-param>
+        <param-name>contextConfigLocation</param-name>
+        <param-value>classpath:springmvc.xml</param-value>
+    </init-param>
+    <load-on-startup>1</load-on-startup>
+</servlet>
 
+<servlet-mapping>
+    <servlet-name>dispatcherServlet</servlet-name>
+    <url-pattern>/</url-pattern>
+</servlet-mapping>
 
+<!--配置中文乱码过滤器-->
+<filter>
+    <filter-name>characterEncodingFilter</filter-name>
+    <filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+    <init-param>
+        <param-name>encoding</param-name>
+        <param-value>UTF-8</param-value>
+    </init-param>
+</filter>
+<filter-mapping>
+    <filter-name>characterEncodingFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+</filter-mapping>
+```
 
+```java
+<springmvc.xml>
+<!--包扫描-->
+<context:component-scan base-package="com.itheima.bj"/>
+
+<!--视图解析器-->
+<bean id="viewResolver" class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+    <property name="prefix" value="/WEB-INF/pages/"/>
+    <property name="suffix" value=".jsp"/>
+</bean>
+
+<!--类型转换器-->
+<bean id="conversionService" class="org.springframework.context.support.ConversionServiceFactoryBean">
+    <property name="converters">
+        <set>
+            <bean class="com.itheima.bj.utils.StringToDateConverter"></bean>
+        </set>
+    </property>
+</bean>
+
+<!--开启mvc注解，包含了处理器映射器，处理器适配器-->
+<mvc:annotation-driven conversion-service="conversionService"/>
+
+<!--前端控制器，配置哪些资源不拦截-->
+<mvc:resources mapping="/css/" location="/css/**"/>
+<mvc:resources mapping="/images/" location="/images/**"/>
+<mvc:resources mapping="/js/" location="/js/**"/>
+```
+
+**参数绑定**
+
+请求参数绑定
+
+- @RequestMapping 
+
+  * URL路径与方法对应关系（方法和类上）
+
+  - 属性：value,path,method,params 
+
+* @RequestParam
+
+```java
+/**
+* 参数为基本类型
+* 属性：value,name
+* required为 true，必填
+* defaultValue：默认值
+*/
+public String hello(@RequestParam Long id){}
+```
+
+* @RequestBody
+  * 传参为java对象dto对象
+
+```java
+/**
+* 参数为java对象
+* 属性：required为 true，必填
+*/
+public String hello(@RequestBody() HelloReq req) {}
+```
+
+* @PathVariable
+  * 路径参数url
+
+```java
+/**
+* 属性：value,name
+* required为 true，必填
+*/
+@RequestMapping("/hello/{id}")
+public String hello(@PathVariable Long id) {}
+```
+
+* @RequestHeader
+
+```java
+/**
+* @RequestHeader获取请求头信息
+*/
+@RequestMapping("/hello")
+public String hello(@RequestHeader(value = "Accept") String header) {
+    System.out.println(header);
+    return "success";
+}
+```
+
+* @CookieValue
+
+```java
+/**
+* @CookieValue获取cookie的值
+*/
+@RequestMapping("/hello")
+public String hello1(@CookieValue(value = "JSESSIONID") String cookieValue) {
+     System.out.println(cookieValue);
+     return "success";
+}
+```
+
+* 返回值为void
+
+```java
+@RequestMapping("/hello")
+public void hello(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+	System.out.println("hello jingdong");
+	//请求转发到success
+	request.getRequestDispatcher("/WEB-INF/pages/success.jsp").forward(request, response);
+	//请求重定向到success
+	response.sendRedirect(request.getContextPath() + "/index.jsp");
+	//请求直接进行响应,解决中文乱码
+	response.setCharacterEncoding("UTF-8");
+	response.setContentType("text/html;charset=UTF-8");
+	response.getWriter().print("张伟");
+	return;
+}
+```
+
+```java
+//使用关键字的方式进行转发或者重定向
+public String forwardOrRedirect() {
+	//请求转发
+	return "forward:/WEB-INF/pages/success.jsp";
+	//请求重定向
+	return "redirect:/index.jsp";
+}
+```
+
+响应
+
+* @ResponseBody
+
+```java
+<!--前端控制器，配置哪些资源不拦截-->
+<mvc:resources mapping="/css/" location="/css/**"/>
+<mvc:resources mapping="/images/" location="/images/**"/>
+<mvc:resources mapping="/js/" location="/js/**"/>
+```
 
 
 
 
 ## spring websocket消息中间件
 
+**HTTP长连接与短连接**
+* 短连接的操作步骤是：
+建立连接——数据传输——关闭连接...建立连接——数据传输——关闭连接
+* 长连接的操作步骤是：
+建立连接——数据传输...（保持连接）...数据传输——关闭连接
+HTTP长连接发送http请求后服务端如果没有返回就一直连着，等服务端有东西了推送给浏览器，相当于给之前的请求一个响应，http连接断了。然后浏览器在发送一个请求，服务器响应，断开，循环往复。
+HTTP协议规定了http连接是一个一来一回的过程。一个请求获得一个响应后必须断掉，而且只有先有请求后有响应。
+websocket建立连接需要先通过一个http请求进行和服务器端握手，握手通过后连接就建立并保持了。浏览器和服务端可以用这个连接相互发送请求了。
+
 **spring websocket 利用注解接收和发送消息**
+
 STOMP(Streaming Text Orientated Message Protocol)流文本定向消息协议
 
 * 是一种为MOM(Message Oriented Middleware，面向消息的中间件)设计的简单文本协议。
@@ -27,32 +215,31 @@ Body^@
   * eg:
 
     * 发送消息
-      		
       ```
-		SEND
+      SEND
 		destination:/queue/trade
 		content_type:application/json
 		content_length:44
 		{"action":"BUY","ticker":"MMM","shares",44}^@
-      ```
-
-    * 订阅消息
+		```
+      
+* 订阅消息
     
       ```
       SUBSCRIBE
-		id:sub-1
-		destination:/topic/price.stock.*
-		^@	
-      ```
+    	  id:sub-1
+		  destination:/topic/price.stock.*
+		  ^@	
+	  ```
     * 服务器广播消息
       ```
       MESSAGE
     	message-id:nxahklf6-1
-		subscription:sub-1
+    	subscription:sub-1
 		destination:/topic/price.stock.MMM
 		{"ticker":"MMM","price":129.45}^@
 	  ```
-      
+	  
 
 spring websocket利用STOMP作为websocket的子协议，原因是stomp可以提供一种类似springmvc的编码方式，可以悠闲地俄利用注解进行接收消息和发送消息。
 
