@@ -254,24 +254,24 @@ public class SpringConfiguration {}
 环绕通知
 
 ```java
-    /**
-     * 环绕通知
-     */
-    public Object arroundPrintLog(ProceedingJoinPoint pj) {
-        Object value = null;
-        try {
-            Object[] args = pj.getArgs();
-            System.out.println("*****打印日志*****前置通知");
-            value = pj.proceed(args);
-            System.out.println("*****打印日志*****后置通知");
-            return value;
-        } catch (Throwable throwable) {
-            System.out.println("*****打印日志*****异常通知");
-            throw new RuntimeException(throwable);
-        } finally {
-            System.out.println("*****打印日志*****最终通知");
-        }
+/**
+ * 环绕通知
+ */
+public Object arroundPrintLog(ProceedingJoinPoint pj) {
+    Object value = null;
+    try {
+        Object[] args = pj.getArgs();
+        System.out.println("*****打印日志*****前置通知");
+        value = pj.proceed(args);
+        System.out.println("*****打印日志*****后置通知");
+        return value;
+    } catch (Throwable throwable) {
+        System.out.println("*****打印日志*****异常通知");
+        throw new RuntimeException(throwable);
+    } finally {
+        System.out.println("*****打印日志*****最终通知");
     }
+}
 ```
 
 声明式事务配置《xml》

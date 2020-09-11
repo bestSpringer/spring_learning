@@ -40,8 +40,17 @@
 </filter>
 <filter-mapping>
     <filter-name>characterEncodingFilter</filter-name>
-    <url-pattern>/*</url-pattern>
+    <url-pattern>["/*"]</url-pattern>
 </filter-mapping>
+
+<!--配置spring监听器,默认只加载WEB-INF目录下的applicationContext.xml配置文件-->
+<listener>
+    <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+</listener>
+<context-param>
+    <param-name>contextConfigLocation</param-name>
+    <param-value>classpath:applicationContext.xml</param-value>
+</context-param>
 ```
 
 ```java
@@ -73,7 +82,7 @@
 <mvc:resources mapping="/js/" location="/js/**"/>
 ```
 
-**参数绑定**
+### 参数绑定
 
 请求参数绑定
 
@@ -183,8 +192,144 @@ public String forwardOrRedirect() {
 <mvc:resources mapping="/js/" location="/js/**"/>
 ```
 
+### springmvc实现文件上传
 
+* 传统方式上传文件
 
+  * 引入依赖
+
+    ```java
+    <dependency>
+       <groupId>commons-fileupload</groupId>
+       <artifactId>commons-fileupload</artifactId>
+       <version>1.2.2</version>
+    </dependency>
+    <dependency>
+       <groupId>commons-io</groupId>
+       <artifactId>commons-io</artifactId>
+       <version>2.6</version>
+    </dependency>
+    ```
+
+  * 上传文件
+
+    ```java
+    @RequestMapping("/fileupload")
+    public String fileupload(HttpServletRequest request) throws Exception {
+        System.out.println("文件上传...");
+        String realPath = request.getSession().getServletContext().getRealPath("/uploads/");
+        System.out.println(realPath);
+        File file = new File(realPath);
+        if (!file.exists()) {
+            file.mkdirs();
+        }
+        DiskFileItemFactory dfi = new DiskFileItemFactory();
+        ServletFileUpload servletFileUpload = new ServletFileUpload(dfi);
+        //解析request，获得文件项
+        List<FileItem> items = servletFileUpload.parseRequest(request);
+        for (FileItem item : items) {
+            //如果此文件项为上传文件项
+            if (!item.isFormField()) {
+                //获取文件名
+                String name = item.getName();
+                item.write(new File(realPath, name));
+                //上传文件大于10KB，会产生临时文件，这里需要删除临时文件
+                item.delete();
+            }
+        }
+        return "success";
+    }
+    ```
+
+* springmvc上传文件
+
+  * springmvc上传文件原理
+
+  ![springmvc_fileupload](C:\Users\jiatiantian\Desktop\springmvc插图\springmvc_fileupload.png)
+
+  * 配置文件解析器对象
+
+  ```java
+  <springmvc.xml>
+  <!--配置文件解析器对象-->
+      <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+          <property name="maxUploadSize" value="10485760"/>
+      </bean>
+  ```
+
+  * 上传文件
+
+  ```java
+  @RequestMapping("/fileupload2")
+      public String fileupload2(HttpServletRequest request, MultipartFile upload) throws Exception {
+          System.out.println("springmvc文件上传...");
+          String filepath = request.getSession().getServletContext().getRealPath("/uploads/");
+          System.out.println(filepath);
+          File file = new File(filepath);
+          if (!file.exists()) {
+              file.mkdirs();
+          }
+          String filename = upload.getOriginalFilename();
+          String uuid = UUID.randomUUID().toString().replace("-", "");
+          filename = uuid + "_" + filename;
+          upload.transferTo(new File(filepath, filename));
+          return "success";
+      }
+  ```
+
+  ### springmvc异常处理
+
+  编写异常处理器
+
+  ```java
+  //实现HandlerExceptionResolver接口
+  public class SysExceptionResolver implements HandlerExceptionResolver{
+      //实现方法resolveException
+  }
+  //在springmvc.xml注册bean对象
+  ```
+
+  ### springmvc拦截器
+
+  自定义拦截器
+
+  ```java
+  //实现HandlerInterceptor
+  public class MyInterceptor implements HandlerInterceptor{
+      //重写preHandle，预处理，在controller执行之前处理
+      //return true放行，执行下一个拦截器，如果没有下一个拦截器，执行controller中的方法
+      //return flase拦截，处理之后放行
+      public boolean preHandle(request,response,handler) throws Exception{
+          System.out.println("ssdda");
+          return true;
+      }
+      //postHandle方法，执行controller方法-->执行postHandle方法-->执行jsp方法-->执行afterCompletion方法
+  }
+  ```
+
+  配置拦截器
+
+  ```java
+  <!--配置拦截器-->
+      <mvc:interceptors>
+          <mvc:interceptor>
+              <!--要拦截的具体方法,"/**"拦截所有方法-->
+              <mvc:mapping path="/hello/*"/>
+              <!--不拦截的方法-->
+              <!-- <mvc:exclude-mapping path="/user/*"/>-->
+              <!--配置拦截器对象-->
+              <bean class="com.itheima.bj.interceptor.MyInterceptor"/>
+          </mvc:interceptor>
+      </mvc:interceptors>
+  ```
+
+  拦截器的执行顺序：
+
+  * 执行preHandle方法
+  * 执行controller方法
+  * 执行postHandle方法
+  * 执行jsp
+  * 执行afterCompletion方法
 
 ## spring websocket消息中间件
 
@@ -215,31 +360,34 @@ Body^@
   * eg:
 
     * 发送消息
-      ```
-      SEND
-		destination:/queue/trade
-		content_type:application/json
-		content_length:44
-		{"action":"BUY","ticker":"MMM","shares",44}^@
-		```
-      
-* 订阅消息
     
       ```
-      SUBSCRIBE
-    	  id:sub-1
-		  destination:/topic/price.stock.*
-		  ^@	
-	  ```
+      SEND
+			destination:/queue/trade
+			content_type:application/json
+			content_length:44
+			{"action":"BUY","ticker":"MMM","shares",44}^@
+		```
+    
+    * 订阅消息
+    
+    ```
+    SUBSCRIBE
+    id:sub-1
+        destination:/topic/price.stock.*
+        ^@
+    ```
+    
     * 服务器广播消息
-      ```
-      MESSAGE
-    	message-id:nxahklf6-1
-    	subscription:sub-1
-		destination:/topic/price.stock.MMM
-		{"ticker":"MMM","price":129.45}^@
-	  ```
-	  
+    
+
+```
+MESSAGE
+      message-id:nxahklf6-1
+      subscription:sub-1
+      destination:/topic/price.stock.MMM
+	    {"ticker":"MMM","price":129.45}^@
+```
 
 spring websocket利用STOMP作为websocket的子协议，原因是stomp可以提供一种类似springmvc的编码方式，可以悠闲地俄利用注解进行接收消息和发送消息。
 
