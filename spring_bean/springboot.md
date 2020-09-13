@@ -336,7 +336,7 @@ public class AccountService {
 
     public String findAll() throws JsonProcessingException {
         //从redis缓存中获取
-        String accountListJson = redisTemplate.boundValueOps("account.findAll").get().toString();
+        String accountListJson = (String) redisTemplate.boundValueOps("account.findAll").get();
         //获取不到，从数据库查询
         if (accountListJson == null) {
             List<Account> all = accountMapper.findAll();
