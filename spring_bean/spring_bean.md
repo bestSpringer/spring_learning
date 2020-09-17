@@ -33,7 +33,7 @@ UserServiceImpl userService = bean.getBean("userService", UserServiceImpl.class)
 userService.save();
 ```
 
-**Bean 的作用范围**
+### Bean 的作用范围
 
 scope属性：
 
@@ -43,7 +43,7 @@ scope属性：
 * session：web应用的会话范围
 * global-session：集群环境的会话范围（全局会话范围）
 
-**Bean 的生命周期**
+### Bean 的生命周期
 
 * 单例：容器在，对象在
 * 多例：
@@ -51,7 +51,7 @@ scope属性：
   * 或者：对象只要在使用
   * 死亡：对象长时间不用，且没有别的对象引用时，由java的垃圾回收机制回收
 
-**Bean 依赖注入**
+### Bean 依赖注入
 
 * 可以注入的数据：基本类型和String、其他bean类型，在配置文件中配置的、复杂类型
 * 注入的方式：
@@ -95,9 +95,9 @@ scope属性：
 * 用于给map结构集合注入的标签：map,props
 * 结构相同，可以互换
 
-### 四类注解
+## 四类注解
 
-​		**用于创建对象的注解**
+### 用于创建对象的注解
 
 * @Component ：用于把当前类对象存入Spring容器中 
   * value属性：用于指定bean的id
@@ -106,7 +106,7 @@ scope属性：
     * @Service：业务层
     * @Repository：持久层
 
-​		**用于注入数据的注解**
+### 用于注入数据的注解
 
 * @Autowired：自动按照类型注入
   * @Qualifier
@@ -120,12 +120,12 @@ scope属性：
     * 基本类型和String类型的注入：
       * @Value：value，用于指定数据的值。可以使用SpEL表达式（${表达式}）
 
-​		**用于改变作用范围的注解**
+### 用于改变作用范围的注解
 
 * @Scope：用于指定bean的作用范围
   * value：取值singleton和prototype
 
-​		**用于生命周期的注解**
+### 用于生命周期的注解
 
 #### **用配置类干掉xml**
 
@@ -195,7 +195,7 @@ public class SpringConfiguration {}
 @ContextConfiguration(classes = SpringConfiguration.class)
 ```
 
-### AOP:使用动态代理技术
+## AOP:使用动态代理技术
 
 * 术语：
   * Joinpoint连接点（业务层方法）

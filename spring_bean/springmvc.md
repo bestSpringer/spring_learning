@@ -1,11 +1,13 @@
 # SpringMVC进阶
 
-* 组件介绍
-  * 前端控制器 DispatcherServlet
-  * 处理器映射器 HandlerMapping
-  * 处理器适配器 HandlerAdapter
-  * 处理器 Handler
-  * 视图解析器 View Resolver
+## 组件介绍
+
+* 前端控制器 DispatcherServlet
+* 处理器映射器 HandlerMapping
+* 处理器适配器 HandlerAdapter
+* 处理器 Handler
+* 视图解析器 View Resolver
+
 * 参数绑定
 	* 请求参数绑定
     * @requestMapping URL路径与方法对应关系（方法和类上）
@@ -82,7 +84,7 @@
 <mvc:resources mapping="/js/" location="/js/**"/>
 ```
 
-### 参数绑定
+## 参数绑定
 
 请求参数绑定
 
@@ -192,144 +194,144 @@ public String forwardOrRedirect() {
 <mvc:resources mapping="/js/" location="/js/**"/>
 ```
 
-### springmvc实现文件上传
+## springmvc实现文件上传
 
-* 传统方式上传文件
+#### 传统方式上传文件
 
-  * 引入依赖
+* 引入依赖
 
-    ```java
-    <dependency>
-       <groupId>commons-fileupload</groupId>
-       <artifactId>commons-fileupload</artifactId>
-       <version>1.2.2</version>
-    </dependency>
-    <dependency>
-       <groupId>commons-io</groupId>
-       <artifactId>commons-io</artifactId>
-       <version>2.6</version>
-    </dependency>
-    ```
+  ```java
+  <dependency>
+     <groupId>commons-fileupload</groupId>
+     <artifactId>commons-fileupload</artifactId>
+     <version>1.2.2</version>
+  </dependency>
+  <dependency>
+     <groupId>commons-io</groupId>
+     <artifactId>commons-io</artifactId>
+     <version>2.6</version>
+  </dependency>
+  ```
 
-  * 上传文件
+* 上传文件
 
-    ```java
-    @RequestMapping("/fileupload")
-    public String fileupload(HttpServletRequest request) throws Exception {
-        System.out.println("文件上传...");
-        String realPath = request.getSession().getServletContext().getRealPath("/uploads/");
-        System.out.println(realPath);
-        File file = new File(realPath);
+  ```java
+  @RequestMapping("/fileupload")
+  public String fileupload(HttpServletRequest request) throws Exception {
+      System.out.println("文件上传...");
+      String realPath = request.getSession().getServletContext().getRealPath("/uploads/");
+      System.out.println(realPath);
+      File file = new File(realPath);
+      if (!file.exists()) {
+          file.mkdirs();
+      }
+      DiskFileItemFactory dfi = new DiskFileItemFactory();
+      ServletFileUpload servletFileUpload = new ServletFileUpload(dfi);
+      //解析request，获得文件项
+      List<FileItem> items = servletFileUpload.parseRequest(request);
+      for (FileItem item : items) {
+          //如果此文件项为上传文件项
+          if (!item.isFormField()) {
+              //获取文件名
+              String name = item.getName();
+              item.write(new File(realPath, name));
+              //上传文件大于10KB，会产生临时文件，这里需要删除临时文件
+              item.delete();
+          }
+      }
+      return "success";
+  }
+  ```
+
+#### springmvc上传文件
+
+* springmvc上传文件原理
+
+![springmvc_fileupload](C:\Users\jiatiantian\Desktop\springmvc插图\springmvc_fileupload.png)
+
+* 配置文件解析器对象
+
+```java
+<springmvc.xml>
+<!--配置文件解析器对象-->
+    <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+        <property name="maxUploadSize" value="10485760"/>
+    </bean>
+```
+
+* 上传文件
+
+```java
+@RequestMapping("/fileupload2")
+    public String fileupload2(HttpServletRequest request, MultipartFile upload) throws Exception {
+        System.out.println("springmvc文件上传...");
+        String filepath = request.getSession().getServletContext().getRealPath("/uploads/");
+        System.out.println(filepath);
+        File file = new File(filepath);
         if (!file.exists()) {
             file.mkdirs();
         }
-        DiskFileItemFactory dfi = new DiskFileItemFactory();
-        ServletFileUpload servletFileUpload = new ServletFileUpload(dfi);
-        //解析request，获得文件项
-        List<FileItem> items = servletFileUpload.parseRequest(request);
-        for (FileItem item : items) {
-            //如果此文件项为上传文件项
-            if (!item.isFormField()) {
-                //获取文件名
-                String name = item.getName();
-                item.write(new File(realPath, name));
-                //上传文件大于10KB，会产生临时文件，这里需要删除临时文件
-                item.delete();
-            }
-        }
+        String filename = upload.getOriginalFilename();
+        String uuid = UUID.randomUUID().toString().replace("-", "");
+        filename = uuid + "_" + filename;
+        upload.transferTo(new File(filepath, filename));
         return "success";
     }
-    ```
+```
 
-* springmvc上传文件
+## springmvc异常处理
 
-  * springmvc上传文件原理
+编写异常处理器
 
-  ![springmvc_fileupload](C:\Users\jiatiantian\Desktop\springmvc插图\springmvc_fileupload.png)
+```java
+//实现HandlerExceptionResolver接口
+public class SysExceptionResolver implements HandlerExceptionResolver{
+    //实现方法resolveException
+}
+//在springmvc.xml注册bean对象
+```
 
-  * 配置文件解析器对象
+## springmvc拦截器
 
-  ```java
-  <springmvc.xml>
-  <!--配置文件解析器对象-->
-      <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
-          <property name="maxUploadSize" value="10485760"/>
-      </bean>
-  ```
+#### 自定义拦截器
 
-  * 上传文件
+```java
+//实现HandlerInterceptor
+public class MyInterceptor implements HandlerInterceptor{
+    //重写preHandle，预处理，在controller执行之前处理
+    //return true放行，执行下一个拦截器，如果没有下一个拦截器，执行controller中的方法
+    //return flase拦截，处理之后放行
+    public boolean preHandle(request,response,handler) throws Exception{
+        System.out.println("ssdda");
+        return true;
+    }
+    //postHandle方法，执行controller方法-->执行postHandle方法-->执行jsp方法-->执行afterCompletion方法
+}
+```
 
-  ```java
-  @RequestMapping("/fileupload2")
-      public String fileupload2(HttpServletRequest request, MultipartFile upload) throws Exception {
-          System.out.println("springmvc文件上传...");
-          String filepath = request.getSession().getServletContext().getRealPath("/uploads/");
-          System.out.println(filepath);
-          File file = new File(filepath);
-          if (!file.exists()) {
-              file.mkdirs();
-          }
-          String filename = upload.getOriginalFilename();
-          String uuid = UUID.randomUUID().toString().replace("-", "");
-          filename = uuid + "_" + filename;
-          upload.transferTo(new File(filepath, filename));
-          return "success";
-      }
-  ```
+#### 配置拦截器
 
-  ### springmvc异常处理
+```java
+<!--配置拦截器-->
+    <mvc:interceptors>
+        <mvc:interceptor>
+            <!--要拦截的具体方法,"/**"拦截所有方法-->
+            <mvc:mapping path="/hello/*"/>
+            <!--不拦截的方法-->
+            <!-- <mvc:exclude-mapping path="/user/*"/>-->
+            <!--配置拦截器对象-->
+            <bean class="com.itheima.bj.interceptor.MyInterceptor"/>
+        </mvc:interceptor>
+    </mvc:interceptors>
+```
 
-  编写异常处理器
+#### 拦截器的执行顺序
 
-  ```java
-  //实现HandlerExceptionResolver接口
-  public class SysExceptionResolver implements HandlerExceptionResolver{
-      //实现方法resolveException
-  }
-  //在springmvc.xml注册bean对象
-  ```
-
-  ### springmvc拦截器
-
-  自定义拦截器
-
-  ```java
-  //实现HandlerInterceptor
-  public class MyInterceptor implements HandlerInterceptor{
-      //重写preHandle，预处理，在controller执行之前处理
-      //return true放行，执行下一个拦截器，如果没有下一个拦截器，执行controller中的方法
-      //return flase拦截，处理之后放行
-      public boolean preHandle(request,response,handler) throws Exception{
-          System.out.println("ssdda");
-          return true;
-      }
-      //postHandle方法，执行controller方法-->执行postHandle方法-->执行jsp方法-->执行afterCompletion方法
-  }
-  ```
-
-  配置拦截器
-
-  ```java
-  <!--配置拦截器-->
-      <mvc:interceptors>
-          <mvc:interceptor>
-              <!--要拦截的具体方法,"/**"拦截所有方法-->
-              <mvc:mapping path="/hello/*"/>
-              <!--不拦截的方法-->
-              <!-- <mvc:exclude-mapping path="/user/*"/>-->
-              <!--配置拦截器对象-->
-              <bean class="com.itheima.bj.interceptor.MyInterceptor"/>
-          </mvc:interceptor>
-      </mvc:interceptors>
-  ```
-
-  拦截器的执行顺序：
-
-  * 执行preHandle方法
-  * 执行controller方法
-  * 执行postHandle方法
-  * 执行jsp
-  * 执行afterCompletion方法
+* 执行preHandle方法
+* 执行controller方法
+* 执行postHandle方法
+* 执行jsp
+* 执行afterCompletion方法
 
 ## spring websocket消息中间件
 
